@@ -4,6 +4,24 @@ import { LogIn } from 'lucide-react';
 import { signInWithGoogle } from '../firebase';
 
 const Login: React.FC = () => {
+  const [error, setError] = React.useState<string | null>(null);
+
+  const handleLogin = async () => {
+    try {
+      setError(null);
+      await signInWithGoogle();
+    } catch (err: any) {
+      console.error('Login error:', err);
+      if (err.code === 'auth/configuration-not-found') {
+        setError('Firebase configuration not found. Please check your Netlify environment variables.');
+      } else if (err.code === 'auth/unauthorized-domain') {
+        setError('This domain is not authorized in Firebase Console. Please add your Netlify domain to Authorized Domains.');
+      } else {
+        setError(err.message || 'Login failed. Please check your configuration.');
+      }
+    }
+  };
+
   return (
     <div className="min-h-screen bg-white flex items-center justify-center p-6 bg-[radial-gradient(circle_at_top_right,_var(--tw-gradient-stops))] from-indigo-50/50 via-white to-white">
       <motion.div 
@@ -24,12 +42,18 @@ const Login: React.FC = () => {
         </div>
         
         <h1 className="text-4xl font-black text-slate-900 tracking-tighter mb-4 italic uppercase">Sales Pro</h1>
-        <p className="text-slate-500 mb-12 leading-relaxed font-medium">
+        <p className="text-slate-500 mb-8 leading-relaxed font-medium">
           The ultimate sales and commission tracking system for Eternalgy partners.
         </p>
 
+        {error && (
+          <div className="mb-6 p-4 bg-red-50 border border-red-100 text-red-600 text-sm rounded-2xl font-medium leading-relaxed">
+            {error}
+          </div>
+        )}
+
         <button
-          onClick={signInWithGoogle}
+          onClick={handleLogin}
           className="w-full bg-white border-2 border-slate-100 text-slate-900 font-black py-5 rounded-2xl hover:bg-slate-50 hover:border-slate-200 transition-all flex items-center justify-center gap-4 active:scale-[0.98] shadow-sm shadow-slate-100"
         >
           <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="G" className="w-6 h-6" />

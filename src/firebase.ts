@@ -19,12 +19,27 @@ const firebaseConfig = {
   firestoreDatabaseId: import.meta.env.VITE_FIREBASE_FIRESTORE_DATABASE_ID || appleConfig.firestoreDatabaseId
 };
 
+// Check if we are using placeholders (which would break the app)
+const isConfigValid = firebaseConfig.apiKey && !firebaseConfig.apiKey.includes('YOUR_API_KEY');
+
+if (!isConfigValid) {
+  console.warn('Firebase configuration is missing or contains placeholders. Google Sign-In will not work.');
+}
+
 const app = initializeApp(firebaseConfig);
 export const db = getFirestore(app, firebaseConfig.firestoreDatabaseId);
 export const auth = getAuth(app);
 export const googleProvider = new GoogleAuthProvider();
 
-export const signInWithGoogle = () => signInWithPopup(auth, googleProvider);
+export const signInWithGoogle = async () => {
+  try {
+    const result = await signInWithPopup(auth, googleProvider);
+    return result;
+  } catch (error: any) {
+    console.error('Login failed:', error);
+    throw error;
+  }
+};
 
 async function testConnection() {
   try {
