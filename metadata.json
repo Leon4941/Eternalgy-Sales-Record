@@ -1,0 +1,10 @@
+{
+  "name": "Eternalgy Sales Pro",
+  "description": "Sales and commission tracking system for Eternalgy Sdn Bhd, specializing in solar EPCC solutions.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "Sales Tracking",
+    "Commission Calculation",
+    "Incentive Trip Progress"
+  ]
+}

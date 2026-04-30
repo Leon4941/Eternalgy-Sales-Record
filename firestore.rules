@@ -1,0 +1,81 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Default deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Global helpers
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // SalesPerson rules
+    match /salespersons/{uid} {
+      allow get: if isSignedIn();
+      allow list: if isSignedIn();
+      allow create: if isOwner(uid) && isValidSalesPerson(incoming());
+      allow update: if isOwner(uid) && isValidSalesPerson(incoming());
+    }
+
+    function isValidSalesPerson(data) {
+      return data.keys().hasAll(['uid', 'name', 'type', 'email']) &&
+             data.keys().size() == 4 &&
+             data.uid == request.auth.uid &&
+             data.name is string && data.name.size() > 0 &&
+             data.type in ['internal', 'outsource'] &&
+             data.email is string;
+    }
+
+    // Sales rules
+    match /sales/{saleId} {
+      // Allow read if user is signed in. In a real app we might restrict this further.
+      // For this app, sales staff can see all records or their own? 
+      // User says "record for a customer list", implying a shared or manager view.
+      // I'll allow reading if signed in for now.
+      allow read: if isSignedIn();
+      
+      allow create: if isSignedIn() && isValidSale(incoming()) && incoming().salesPersonId == request.auth.uid;
+      
+      allow update: if isSignedIn() && isValidSale(incoming()) && 
+                    (existing().salesPersonId == request.auth.uid) &&
+                    incoming().salesPersonId == existing().salesPersonId;
+
+      allow delete: if isSignedIn() && existing().salesPersonId == request.auth.uid;
+    }
+
+    function isValidSale(data) {
+      return data.keys().hasAll(['customerName', 'saleDate', 'propertyType', 'salesFigure', 'progress', 'progressDate', 'salesPersonId', 'salesPersonType', 'overridingRate', 'extraCommission', 'epMultiplier', 'createdAt', 'updatedAt']) &&
+             data.customerName is string && data.customerName.size() > 0 &&
+             data.saleDate is string &&
+             data.propertyType in ['Residential', 'Shoplot', 'Industrial'] &&
+             data.salesFigure is number &&
+             data.progress in ['Deposit-5%', '2nd Payment-65%', 'Complete-100%'] &&
+             data.progressDate is string &&
+             data.salesPersonId is string &&
+             data.salesPersonType in ['internal', 'outsource'] &&
+             data.overridingRate is number &&
+             data.extraCommission is number &&
+             data.epMultiplier is number &&
+             data.createdAt is string &&
+             data.updatedAt is string;
+    }
+  }
+}

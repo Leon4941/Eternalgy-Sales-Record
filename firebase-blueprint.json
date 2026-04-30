@@ -1,0 +1,47 @@
+{
+  "entities": {
+    "SalesPerson": {
+      "title": "Sales Person",
+      "description": "Details about a salesperson including their type and basic info.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "name": { "type": "string" },
+        "type": { "type": "string", "enum": ["internal", "outsource"] },
+        "email": { "type": "string", "format": "email" }
+      },
+      "required": ["uid", "name", "type"]
+    },
+    "CustomerSale": {
+      "title": "Customer Sale",
+      "description": "Record for a specific customer sale including figures and commissions.",
+      "type": "object",
+      "properties": {
+        "customerName": { "type": "string" },
+        "saleDate": { "type": "string", "format": "date" },
+        "propertyType": { "type": "string", "enum": ["Residential", "Shoplot", "Industrial"] },
+        "salesFigure": { "type": "number" },
+        "progress": { "type": "string", "enum": ["Deposit-5%", "2nd Payment-65%", "Complete-100%"] },
+        "progressDate": { "type": "string", "format": "date" },
+        "salesPersonId": { "type": "string" },
+        "salesPersonType": { "type": "string", "enum": ["internal", "outsource"] },
+        "overridingRate": { "type": "number" },
+        "extraCommission": { "type": "number" },
+        "epMultiplier": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["customerName", "saleDate", "propertyType", "salesFigure", "progress", "salesPersonId", "salesPersonType"]
+    }
+  },
+  "firestore": {
+    "/salespersons/{uid}": {
+      "schema": "SalesPerson",
+      "description": "Collection of salesperson profiles."
+    },
+    "/sales": {
+      "schema": "CustomerSale",
+      "description": "Collection of all sales records."
+    }
+  }
+}
