@@ -21,7 +21,9 @@ const Login: React.FC = () => {
         setError(`Domain (${currentDomain}) unauthorized. 
           Project: ${activeProjectId}
           AuthDomain: ${activeAuthDomain}
-          Please check if Netlify Env Vars are correct and NOT marked as "Secret".`);
+          1. Verify AuthDomain is "[project-id].firebaseapp.com".
+          2. Check Google Cloud Console API Key restrictions.
+          3. Ensure no trailing spaces in Netlify variables.`);
       } else {
         setError(err.message || 'Login failed. Please check your configuration.');
       }
