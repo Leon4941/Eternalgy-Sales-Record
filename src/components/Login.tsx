@@ -16,24 +16,9 @@ const Login: React.FC = () => {
         setError('Firebase configuration not found. Please check your Netlify environment variables.');
       } else if (err.code === 'auth/unauthorized-domain') {
         const currentDomain = window.location.hostname;
-        const apiKey = import.meta.env.VITE_FIREBASE_API_KEY || '';
-        const maskedKey = apiKey.length > 12 
-          ? `${apiKey.substring(0, 8)}...${apiKey.substring(apiKey.length - 8)}` 
-          : 'Too Short/Missing';
-          
-        const config = {
-          projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || 'Missing',
-          authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || 'Missing'
-        };
-        setError(`Domain (${currentDomain}) unauthorized.
-          Project: ${config.projectId}
-          AuthDomain: ${config.authDomain}
-          Current API Key (starts with): ${maskedKey}
-          
-          Final Verification:
-          1. Does this API Key match the one in Project "${config.projectId}"?
-          2. Double check for spaces in Netlify Env Vars.
-          3. Ensure YOU RE-DEPLOYED from Netlify after saving variables.`);
+        const configProjectId = import.meta.env.VITE_FIREBASE_PROJECT_ID || 'Unknown';
+        setError(`Domain (${currentDomain}) unauthorized in Project: ${configProjectId}. 
+          IMPORTANT: You MUST "Clear cache and deploy site" on Netlify after updating environment variables for changes to take effect.`);
       } else {
         setError(err.message || 'Login failed. Please check your configuration.');
       }

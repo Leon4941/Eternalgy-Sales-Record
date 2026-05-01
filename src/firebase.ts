@@ -10,13 +10,13 @@ const appleConfig: any = appleConfigKey ? (appleConfigs[appleConfigKey] as any).
 // Use environment variables if available (for Netlify/external deployment)
 // Otherwise fallback to the AI Studio applet config
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || appleConfig.apiKey,
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || appleConfig.authDomain,
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || appleConfig.projectId,
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || appleConfig.storageBucket,
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || appleConfig.messagingSenderId,
-  appId: import.meta.env.VITE_FIREBASE_APP_ID || appleConfig.appId,
-  firestoreDatabaseId: import.meta.env.VITE_FIREBASE_FIRESTORE_DATABASE_ID || appleConfig.firestoreDatabaseId
+  apiKey: (import.meta.env.VITE_FIREBASE_API_KEY || appleConfig.apiKey || '').trim(),
+  authDomain: (import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || appleConfig.authDomain || '').trim(),
+  projectId: (import.meta.env.VITE_FIREBASE_PROJECT_ID || appleConfig.projectId || '').trim(),
+  storageBucket: (import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || appleConfig.storageBucket || '').trim(),
+  messagingSenderId: (import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || appleConfig.messagingSenderId || '').trim(),
+  appId: (import.meta.env.VITE_FIREBASE_APP_ID || appleConfig.appId || '').trim(),
+  firestoreDatabaseId: (import.meta.env.VITE_FIREBASE_FIRESTORE_DATABASE_ID || appleConfig.firestoreDatabaseId || '(default)').trim()
 };
 
 // Check if we are using placeholders (which would break the app)
