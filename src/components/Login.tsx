@@ -17,8 +17,12 @@ const Login: React.FC = () => {
       } else if (err.code === 'auth/unauthorized-domain') {
         const currentDomain = window.location.hostname;
         const configProjectId = import.meta.env.VITE_FIREBASE_PROJECT_ID || 'Unknown';
+        const apiKey = import.meta.env.VITE_FIREBASE_API_KEY || '';
+        const keyPrefix = apiKey ? apiKey.substring(0, 10) + '...' : 'Missing';
+        
         setError(`Domain (${currentDomain}) unauthorized in Project: ${configProjectId}. 
-          IMPORTANT: You MUST "Clear cache and deploy site" on Netlify after updating environment variables for changes to take effect.`);
+          Current Active API Key: ${keyPrefix}
+          IMPORTANT: If this prefix doesn't match your "Do..." key, you MUST "Clear cache and deploy site" on Netlify.`);
       } else {
         setError(err.message || 'Login failed. Please check your configuration.');
       }
