@@ -13,18 +13,11 @@ const Login: React.FC = () => {
     } catch (err: any) {
       console.error('Login error:', err);
       if (err.code === 'auth/configuration-not-found') {
-        setError('Firebase configuration not found. Please check your Netlify environment variables.');
+        setError('Firebase configuration not found. Please check your system settings.');
       } else if (err.code === 'auth/unauthorized-domain') {
-        const currentDomain = window.location.hostname;
-        const configProjectId = import.meta.env.VITE_FIREBASE_PROJECT_ID || 'Unknown';
-        const apiKey = import.meta.env.VITE_FIREBASE_API_KEY || '';
-        const keyPrefix = apiKey ? apiKey.substring(0, 10) + '...' : 'Missing';
-        
-        setError(`Domain (${currentDomain}) unauthorized in Project: ${configProjectId}. 
-          Current Active API Key: ${keyPrefix}
-          IMPORTANT: If this prefix doesn't match your "Do..." key, you MUST "Clear cache and deploy site" on Netlify.`);
+        setError('This domain is not authorized for login. Please contact support.');
       } else {
-        setError(err.message || 'Login failed. Please check your configuration.');
+        setError(err.message || 'Login failed. Please try again.');
       }
     }
   };

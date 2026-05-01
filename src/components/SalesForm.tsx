@@ -44,15 +44,15 @@ const SalesForm: React.FC<SalesFormProps> = ({ sale, onClose }) => {
       } as CustomerSale;
 
       if (sale?.id) {
-        await updateDoc(doc(db, 'sales', sale.id), { ...data });
+        updateDoc(doc(db, 'sales', sale.id), { ...data });
       } else {
-        await addDoc(collection(db, 'sales'), data);
+        addDoc(collection(db, 'sales'), data);
       }
+      // Close immediately for better UX (Firestore handles sync in background)
       onClose();
     } catch (error) {
       console.error("Error saving sale:", error);
-    } finally {
-      setSaving(false);
+      setSaving(false); // Only reset if it failed immediately
     }
   };
 

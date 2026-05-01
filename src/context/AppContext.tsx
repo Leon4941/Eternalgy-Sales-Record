@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User, onAuthStateChanged } from 'firebase/auth';
-import { doc, getDoc, setDoc, onSnapshot, collection, query, orderBy } from 'firebase/firestore';
+import { doc, getDoc, setDoc, onSnapshot, collection, query, orderBy, where } from 'firebase/firestore';
 import { auth, db } from '../firebase';
 import { SalesPerson, CustomerSale } from '../types';
 
@@ -30,16 +30,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           setProfileState(profileDoc.data() as SalesPerson);
         }
 
-        // Subscribe to sales (all sales or just their own?)
-        // User says "record sales人員的销售记录", I'll show all or theirs?
-        // Usually these apps show all if it's for a company, but for security rules I set them to see their own records for write, but all for read.
-        const q = query(collection(db, 'sales'), orderBy('saleDate', 'desc'));
+        // Subscribe to sales for the specific user to improve performance
+        const q = query(
+          collection(db, 'sales'),
+          where('salesPersonId', '==', user.uid),
+          orderBy('saleDate', 'desc')
+        );
+        
         const unsubscribeSales = onSnapshot(q, (snapshot) => {
           const salesData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as CustomerSale));
           setSales(salesData);
           setLoading(false);
         }, (error) => {
            console.error("Firestore read error:", error);
+           // If index is missing, it will fail here. We should still set loading to false.
            setLoading(false);
         });
 

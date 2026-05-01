@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { motion } from 'motion/react';
 import { TrendingUp, Target, Award, Star, Calendar, BarChart3, ChevronLeft, ChevronRight } from 'lucide-react';
-import { startOfMonth, endOfMonth, isWithinInterval, subMonths, format, isSameMonth } from 'date-fns';
+import { startOfMonth, endOfMonth, isWithinInterval, subMonths, format } from 'date-fns';
 import { useAppContext } from '../context/AppContext';
 import { EGA_CONFIG, ESA_CONFIG } from '../constants';
 import { CustomerSale } from '../types';
@@ -15,50 +15,47 @@ const Dashboard: React.FC = () => {
     return baseValue * (sale.epMultiplier || 1);
   };
 
-  const totalSales = sales.reduce((acc, sale) => acc + sale.salesFigure, 0);
-  const totalEP = sales.reduce((acc, sale) => acc + calculateEPPoints(sale), 0);
+  const { totalSales, totalEP, monthlyTrendData, rollingVolume, rollingCases, maxTrendVolume, egaEP, esaEP } = useMemo(() => {
+    const totalSales = sales.reduce((acc, sale) => acc + sale.salesFigure, 0);
+    const totalEP = sales.reduce((acc, sale) => acc + calculateEPPoints(sale), 0);
 
-  // Selected Month Stats
-  const viewMonthStart = startOfMonth(selectedMonthView);
-  const viewMonthEnd = endOfMonth(selectedMonthView);
-  const filteredMonthSales = sales.filter(s => isWithinInterval(new Date(s.saleDate), { start: viewMonthStart, end: viewMonthEnd }));
-  const monthlyVolume = filteredMonthSales.reduce((acc, s) => acc + s.salesFigure, 0);
+    // Rolling 3 Months Stats
+    const months = [subMonths(new Date(), 2), subMonths(new Date(), 1), new Date()];
+    const monthlyTrendData = months.map(m => {
+      const start = startOfMonth(m);
+      const end = endOfMonth(m);
+      const monthSales = sales.filter(s => isWithinInterval(new Date(s.saleDate), { start, end }));
+      return {
+        month: format(m, 'MMM'),
+        volume: monthSales.reduce((acc, s) => acc + s.salesFigure, 0),
+        cases: monthSales.length
+      };
+    });
 
-  // Rolling 3 Months Stats (Current month + previous 2 months)
-  const months = [subMonths(new Date(), 2), subMonths(new Date(), 1), new Date()];
-  const monthlyTrendData = months.map(m => {
-    const start = startOfMonth(m);
-    const end = endOfMonth(m);
-    const monthSales = sales.filter(s => isWithinInterval(new Date(s.saleDate), { start, end }));
+    const rollingVolume = monthlyTrendData.reduce((acc, d) => acc + d.volume, 0);
+    const rollingCases = monthlyTrendData.reduce((acc, d) => acc + d.cases, 0);
+    const maxTrendVolume = Math.max(...monthlyTrendData.map(d => d.volume), 1);
+
+    // EGA/ESA Filtered
+    const egaSales = sales.filter(s => new Date(s.saleDate) <= new Date(EGA_CONFIG.deadline));
+    const egaEP = egaSales.reduce((acc, s) => acc + calculateEPPoints(s), 0);
+
+    const esaSales = sales.filter(s => new Date(s.saleDate) <= new Date(ESA_CONFIG.deadline));
+    const esaEP = esaSales.reduce((acc, s) => acc + calculateEPPoints(s), 0);
+
+    return { totalSales, totalEP, monthlyTrendData, rollingVolume, rollingCases, maxTrendVolume, egaEP, esaEP };
+  }, [sales]);
+
+  // View-specific Month Stats (separated from general memo to allow independent month cycling)
+  const monthlyVolumeData = useMemo(() => {
+    const viewMonthStart = startOfMonth(selectedMonthView);
+    const viewMonthEnd = endOfMonth(selectedMonthView);
+    const filteredMonthSales = sales.filter(s => isWithinInterval(new Date(s.saleDate), { start: viewMonthStart, end: viewMonthEnd }));
     return {
-      month: format(m, 'MMM'),
-      volume: monthSales.reduce((acc, s) => acc + s.salesFigure, 0),
-      cases: monthSales.length
+      volume: filteredMonthSales.reduce((acc, s) => acc + s.salesFigure, 0),
+      count: filteredMonthSales.length
     };
-  });
-
-  const rollingVolume = monthlyTrendData.reduce((acc, d) => acc + d.volume, 0);
-  const rollingCases = monthlyTrendData.reduce((acc, d) => acc + d.cases, 0);
-  const maxTrendVolume = Math.max(...monthlyTrendData.map(d => d.volume), 1);
-
-  const calculateProgress = (current: number, target: number) => {
-    const percent = (current / target) * 100;
-    return Math.min(percent, 100).toFixed(1);
-  };
-
-  const changeMonth = (offset: number) => {
-    setSelectedMonthView(new Date(selectedMonthView.setMonth(selectedMonthView.getMonth() + offset)));
-  };
-
-  // Filter sales for EGA (up to 30/6)
-  const egaSales = sales.filter(s => new Date(s.saleDate) <= new Date(EGA_CONFIG.deadline));
-  const egaEP = egaSales.reduce((acc, s) => acc + calculateEPPoints(s), 0);
-  const egaVolume = egaSales.reduce((acc, s) => acc + s.salesFigure, 0);
-
-  // Filter sales for ESA (up to 31/12)
-  const esaSales = sales.filter(s => new Date(s.saleDate) <= new Date(ESA_CONFIG.deadline));
-  const esaEP = esaSales.reduce((acc, s) => acc + calculateEPPoints(s), 0);
-  const esaVolume = esaSales.reduce((acc, s) => acc + s.salesFigure, 0);
+  }, [sales, selectedMonthView]);
 
   const targetEP = profile?.type === 'internal' ? EGA_CONFIG.epPointsTarget.internal : EGA_CONFIG.epPointsTarget.outsource;
   const esaTargetEP = profile?.type === 'internal' ? ESA_CONFIG.epPointsTarget.internal : ESA_CONFIG.epPointsTarget.outsource;
@@ -135,8 +132,8 @@ const Dashboard: React.FC = () => {
             Sales: {format(selectedMonthView, 'MMM yyyy')}
           </p>
           <h3 className="text-2xl font-black text-indigo-900 mt-1">
-            RM {monthlyVolume.toLocaleString()}
-            <small className="text-xs font-bold text-indigo-500/70 ml-2">({filteredMonthSales.length} Cases)</small>
+            RM {monthlyVolumeData.volume.toLocaleString()}
+            <small className="text-xs font-bold text-indigo-500/70 ml-2">({monthlyVolumeData.count} Cases)</small>
           </h3>
         </motion.div>
 

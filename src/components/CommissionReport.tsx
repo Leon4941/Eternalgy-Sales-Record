@@ -17,25 +17,28 @@ const CommissionReport: React.FC = () => {
     return { base, overriding, contest, total: base + overriding + contest };
   };
 
-  // Monthly filtering
-  const monthStart = startOfMonth(selectedMonth);
-  const monthEnd = endOfMonth(selectedMonth);
+  const { monthlySales, monthlyStats, lifetimeTotal } = React.useMemo(() => {
+    const monthStart = startOfMonth(selectedMonth);
+    const monthEnd = endOfMonth(selectedMonth);
 
-  const monthlySales = sales.filter(s => {
-    const date = new Date(s.saleDate);
-    return isWithinInterval(date, { start: monthStart, end: monthEnd });
-  });
+    const monthlySales = sales.filter(s => {
+      const date = new Date(s.saleDate);
+      return isWithinInterval(date, { start: monthStart, end: monthEnd });
+    });
 
-  const monthlyStats = monthlySales.reduce((acc, s) => {
-    const comms = calculateSaleCommissions(s);
-    acc.base += comms.base;
-    acc.overriding += comms.overriding;
-    acc.contest += comms.contest;
-    acc.total += comms.total;
-    return acc;
-  }, { base: 0, overriding: 0, contest: 0, total: 0 });
+    const monthlyStats = monthlySales.reduce((acc, s) => {
+      const comms = calculateSaleCommissions(s);
+      acc.base += comms.base;
+      acc.overriding += comms.overriding;
+      acc.contest += comms.contest;
+      acc.total += comms.total;
+      return acc;
+    }, { base: 0, overriding: 0, contest: 0, total: 0 });
 
-  const lifetimeTotal = sales.reduce((acc, s) => acc + calculateSaleCommissions(s).total, 0);
+    const lifetimeTotal = sales.reduce((acc, s) => acc + calculateSaleCommissions(s).total, 0);
+
+    return { monthlySales, monthlyStats, lifetimeTotal };
+  }, [sales, selectedMonth]);
 
   return (
     <div className="space-y-8 pb-10">
