@@ -57,6 +57,19 @@ const Dashboard: React.FC = () => {
     };
   }, [sales, selectedMonthView]);
 
+  const calculateProgress = (current: number, target: number) => {
+    const percent = (current / target) * 100;
+    return Math.min(percent, 100).toFixed(1);
+  };
+
+  const changeMonth = (offset: number) => {
+    setSelectedMonthView(prev => {
+      const d = new Date(prev);
+      d.setMonth(d.getMonth() + offset);
+      return d;
+    });
+  };
+
   const targetEP = profile?.type === 'internal' ? EGA_CONFIG.epPointsTarget.internal : EGA_CONFIG.epPointsTarget.outsource;
   const esaTargetEP = profile?.type === 'internal' ? ESA_CONFIG.epPointsTarget.internal : ESA_CONFIG.epPointsTarget.outsource;
 
