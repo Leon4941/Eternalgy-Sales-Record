@@ -21,10 +21,11 @@ const ProfileSetup: React.FC = () => {
         type,
         email: user.email || '',
       });
-    } catch (error) {
-      console.error(error);
+    } catch (error: any) {
+      console.error("Save error:", error);
+      // alert is already called in AppContext's setProfile
     } finally {
-      setSaving(false);
+    setSaving(false);
     }
   };
 

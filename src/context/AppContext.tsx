@@ -31,45 +31,55 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     const unsubscribeAuth = onAuthStateChanged(auth, async (user) => {
       clearTimeout(timer);
+      
+      // Check for placeholders
+      const isPlaceholder = (import.meta.env.VITE_FIREBASE_PROJECT_ID || "").includes("YOUR_PROJECT_ID");
+      if (isPlaceholder) {
+        setLoading(false);
+        console.error("Firebase is using placeholder values. Please check your environment variables.");
+        return;
+      }
+
       setUser(user);
       if (user) {
         // Fetch profile and subscribe to sales
-        const initData = async () => {
-          try {
-            const profileDoc = await getDoc(doc(db, 'salespersons', user.uid));
-            if (profileDoc.exists()) {
-              setProfileState(profileDoc.data() as SalesPerson);
+        const initData = () => {
+          setLoading(true);
+          
+          // 1. Subscribe to profile
+          const unsubscribeProfile = onSnapshot(doc(db, 'salespersons', user.uid), (doc) => {
+            if (doc.exists()) {
+              setProfileState(doc.data() as SalesPerson);
             }
-
-            // Subscribe to sales for the specific user
-            const q = query(
-              collection(db, 'sales'),
-              where('salesPersonId', '==', user.uid)
-            );
-            
-            const unsubscribeSales = onSnapshot(q, (snapshot) => {
-              const salesData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as CustomerSale));
-              // Sort client side to bypass index requirement
-              salesData.sort((a, b) => new Date(b.saleDate).getTime() - new Date(a.saleDate).getTime());
-              setSales(salesData);
-              setLoading(false);
-            }, (error) => {
-               console.error("Firestore read error:", error);
-               setLoading(false);
-            });
-
-            return unsubscribeSales;
-          } catch (error) {
-            console.error("Initialization error:", error);
+            // If user exists but doc doesn't, we still want to stop loading to show Setup screen
             setLoading(false);
-            return () => {};
-          }
+          }, (error) => {
+            console.error("Profile sync error:", error);
+            setLoading(false);
+          });
+
+          // 2. Subscribe to sales
+          const q = query(
+            collection(db, 'sales'),
+            where('salesPersonId', '==', user.uid)
+          );
+          
+          const unsubscribeSales = onSnapshot(q, (snapshot) => {
+            const salesData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as CustomerSale));
+            salesData.sort((a, b) => new Date(b.saleDate).getTime() - new Date(a.saleDate).getTime());
+            setSales(salesData);
+          }, (error) => {
+             console.error("Sales sync error:", error);
+          });
+
+          return () => {
+            unsubscribeProfile();
+            unsubscribeSales();
+          };
         };
 
-        const cleanupPromise = initData();
-        return () => {
-          cleanupPromise.then(unsubscribe => unsubscribe && unsubscribe());
-        };
+        const cleanup = initData();
+        return () => cleanup();
       } else {
         setProfileState(null);
         setSales([]);
@@ -81,9 +91,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }, []);
 
   const setProfile = async (newProfile: SalesPerson) => {
-    if (user) {
+    if (!user) return;
+    try {
+      console.log("Attempting to save profile for:", user.uid);
       await setDoc(doc(db, 'salespersons', user.uid), newProfile);
       setProfileState(newProfile);
+    } catch (error: any) {
+      console.error("SetProfile Error:", error);
+      alert(`Failed to save profile: ${error.message || 'Unknown error'}`);
+      throw error;
     }
   };
 
