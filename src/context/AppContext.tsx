@@ -21,34 +21,55 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // Safety timeout to ensure loading screen doesn't get stuck forever
+    const timer = setTimeout(() => {
+      setLoading(prev => {
+        if (prev) console.warn("Loading safety timeout triggered");
+        return false;
+      });
+    }, 10000);
+
     const unsubscribeAuth = onAuthStateChanged(auth, async (user) => {
+      clearTimeout(timer);
       setUser(user);
       if (user) {
-        // Fetch profile
-        const profileDoc = await getDoc(doc(db, 'salespersons', user.uid));
-        if (profileDoc.exists()) {
-          setProfileState(profileDoc.data() as SalesPerson);
-        }
+        // Fetch profile and subscribe to sales
+        const initData = async () => {
+          try {
+            const profileDoc = await getDoc(doc(db, 'salespersons', user.uid));
+            if (profileDoc.exists()) {
+              setProfileState(profileDoc.data() as SalesPerson);
+            }
 
-        // Subscribe to sales for the specific user
-        const q = query(
-          collection(db, 'sales'),
-          where('salesPersonId', '==', user.uid)
-        );
-        
-        const unsubscribeSales = onSnapshot(q, (snapshot) => {
-          const salesData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as CustomerSale));
-          // Sort client side to bypass index requirement
-          salesData.sort((a, b) => new Date(b.saleDate).getTime() - new Date(a.saleDate).getTime());
-          setSales(salesData);
-          setLoading(false);
-        }, (error) => {
-           console.error("Firestore read error:", error);
-           // If index is missing, it will fail here. We should still set loading to false.
-           setLoading(false);
-        });
+            // Subscribe to sales for the specific user
+            const q = query(
+              collection(db, 'sales'),
+              where('salesPersonId', '==', user.uid)
+            );
+            
+            const unsubscribeSales = onSnapshot(q, (snapshot) => {
+              const salesData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as CustomerSale));
+              // Sort client side to bypass index requirement
+              salesData.sort((a, b) => new Date(b.saleDate).getTime() - new Date(a.saleDate).getTime());
+              setSales(salesData);
+              setLoading(false);
+            }, (error) => {
+               console.error("Firestore read error:", error);
+               setLoading(false);
+            });
 
-        return () => unsubscribeSales();
+            return unsubscribeSales;
+          } catch (error) {
+            console.error("Initialization error:", error);
+            setLoading(false);
+            return () => {};
+          }
+        };
+
+        const cleanupPromise = initData();
+        return () => {
+          cleanupPromise.then(unsubscribe => unsubscribe && unsubscribe());
+        };
       } else {
         setProfileState(null);
         setSales([]);
