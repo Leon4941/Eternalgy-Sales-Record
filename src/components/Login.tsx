@@ -15,7 +15,8 @@ const Login: React.FC = () => {
       if (err.code === 'auth/configuration-not-found') {
         setError('Firebase configuration not found. Please check your Netlify environment variables.');
       } else if (err.code === 'auth/unauthorized-domain') {
-        setError('This domain is not authorized in Firebase Console. Please add your Netlify domain to Authorized Domains.');
+        const currentDomain = window.location.hostname;
+        setError(`This domain (${currentDomain}) is not authorized in Firebase Console. Please add it to Authorized Domains.`);
       } else {
         setError(err.message || 'Login failed. Please check your configuration.');
       }
