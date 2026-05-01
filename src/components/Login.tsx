@@ -16,9 +16,12 @@ const Login: React.FC = () => {
         setError('Firebase configuration not found. Please check your Netlify environment variables.');
       } else if (err.code === 'auth/unauthorized-domain') {
         const currentDomain = window.location.hostname;
-        const configProjectId = import.meta.env.VITE_FIREBASE_PROJECT_ID ? 'Custom Env Set' : 'Using Internal AI Studio ID';
-        const activeProjectId = import.meta.env.VITE_FIREBASE_PROJECT_ID || 'gen-lang-client-xxxx';
-        setError(`Domain (${currentDomain}) is not authorized. Using Project: ${activeProjectId} (${configProjectId}). Please check Netlify Env Vars.`);
+        const activeProjectId = import.meta.env.VITE_FIREBASE_PROJECT_ID || 'Unknown';
+        const activeAuthDomain = import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || 'Unknown';
+        setError(`Domain (${currentDomain}) unauthorized. 
+          Project: ${activeProjectId}
+          AuthDomain: ${activeAuthDomain}
+          Please check if Netlify Env Vars are correct and NOT marked as "Secret".`);
       } else {
         setError(err.message || 'Login failed. Please check your configuration.');
       }
