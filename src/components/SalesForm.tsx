@@ -35,24 +35,27 @@ const SalesForm: React.FC<SalesFormProps> = ({ sale, onClose }) => {
     setSaving(true);
 
     try {
-      const data = {
-        ...formData,
+      // Remove id from payload if it exists
+      const { id, ...cleanData } = formData;
+      
+      const payload = {
+        ...cleanData,
         salesPersonId: user.uid,
         salesPersonType: profile.type,
         updatedAt: new Date().toISOString(),
         createdAt: sale?.createdAt || new Date().toISOString(),
-      } as CustomerSale;
+      };
 
       if (sale?.id) {
-        updateDoc(doc(db, 'sales', sale.id), { ...data });
+        await updateDoc(doc(db, 'sales', sale.id), payload);
       } else {
-        addDoc(collection(db, 'sales'), data);
+        await addDoc(collection(db, 'sales'), payload);
       }
-      // Close immediately for better UX (Firestore handles sync in background)
       onClose();
     } catch (error) {
       console.error("Error saving sale:", error);
-      setSaving(false); // Only reset if it failed immediately
+    } finally {
+      setSaving(false);
     }
   };
 

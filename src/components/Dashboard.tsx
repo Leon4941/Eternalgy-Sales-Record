@@ -148,6 +148,9 @@ const Dashboard: React.FC = () => {
             RM {monthlyVolumeData.volume.toLocaleString()}
             <small className="text-xs font-bold text-indigo-500/70 ml-2">({monthlyVolumeData.count} Cases)</small>
           </h3>
+          <p className="text-[10px] text-slate-400 font-bold uppercase mt-2">
+            Total records sync: {sales.length}
+          </p>
         </motion.div>
 
         {/* Rolling 3 Months Card */}

@@ -30,15 +30,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           setProfileState(profileDoc.data() as SalesPerson);
         }
 
-        // Subscribe to sales for the specific user to improve performance
+        // Subscribe to sales for the specific user
         const q = query(
           collection(db, 'sales'),
-          where('salesPersonId', '==', user.uid),
-          orderBy('saleDate', 'desc')
+          where('salesPersonId', '==', user.uid)
         );
         
         const unsubscribeSales = onSnapshot(q, (snapshot) => {
           const salesData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as CustomerSale));
+          // Sort client side to bypass index requirement
+          salesData.sort((a, b) => new Date(b.saleDate).getTime() - new Date(a.saleDate).getTime());
           setSales(salesData);
           setLoading(false);
         }, (error) => {
