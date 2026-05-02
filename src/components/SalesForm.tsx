@@ -5,6 +5,7 @@ import { db } from '../firebase';
 import { useAppContext } from '../context/AppContext';
 import { CustomerSale, PropertyType, ProgressStatus } from '../types';
 import { PROPERTY_TYPES, PROGRESS_STATUSES, EP_MULTIPLIERS, OVERRIDING_RATES } from '../constants';
+import { handleFirestoreError, OperationType } from '../lib/firestoreUtils';
 
 interface SalesFormProps {
   sale?: CustomerSale;
@@ -46,14 +47,16 @@ const SalesForm: React.FC<SalesFormProps> = ({ sale, onClose }) => {
         createdAt: sale?.createdAt || new Date().toISOString(),
       };
 
-      if (sale?.id) {
-        await updateDoc(doc(db, 'sales', sale.id), payload);
-      } else {
-        await addDoc(collection(db, 'sales'), payload);
-      }
+      const operation = sale?.id 
+        ? updateDoc(doc(db, 'sales', sale.id), payload)
+        : addDoc(collection(db, 'sales'), payload);
+
+      const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error("Save operation timed out. Please check your connection.")), 15000));
+      
+      await Promise.race([operation, timeoutPromise]);
       onClose();
-    } catch (error) {
-      console.error("Error saving sale:", error);
+    } catch (error: any) {
+      handleFirestoreError(error, OperationType.WRITE, 'sales');
     } finally {
       setSaving(false);
     }

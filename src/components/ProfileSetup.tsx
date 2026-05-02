@@ -23,9 +23,16 @@ const ProfileSetup: React.FC = () => {
       });
     } catch (error: any) {
       console.error("Save error:", error);
-      // alert is already called in AppContext's setProfile
+      let errorMsg = "Failed to save profile. Please try again.";
+      try {
+        const parsed = JSON.parse(error.message);
+        errorMsg = parsed.error || errorMsg;
+      } catch (e) {
+        errorMsg = error.message || errorMsg;
+      }
+      alert(errorMsg);
     } finally {
-    setSaving(false);
+      setSaving(false);
     }
   };
 
